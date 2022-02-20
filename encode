@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# If there are more than one, select which show
+if [ ! -f ~/.config/nspcast/default.conf ]; then
+	read -p "What show is this for? " SHOW
+fi
+
+# Set episode number
+read -p "What is the episode number? " NUM
+LONG_NUM=`printf %03d $NUM`
+
+# Source settings 
+if [ -f ~/.config/nspcast/default.conf ]; then
+	source ~/.config/nspcast/default.conf
+else
+	source ~/.config/nspcast/$SHOW.conf
+fi
+
+read -p "What is the episode title? " TITLE
+
+name=$(echo $1 | sed -e 's/\.wav$//' -e 's/.*\.//')
+
+# Silence truncation and encode MP3 in temp file
+ffmpeg -i $1 -c libmp3lame -b:a 96k -ar 44100 -ac 1 -af loudnorm=I=-16:LRA=5:TP=1.0 -af silenceremove=stop_periods=-1:stop_duration=1:start_silence=0.75:stop_threshold=-50dB -id3v2_version 3 -metadata title="$NUM $TITLE" -metadata artist="$SHOW" -metadata album_artist="$SHOW" -metadata date==$(date +'%Y') -metadata track=$NUM $MP3 
+

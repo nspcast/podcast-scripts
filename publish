@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# If there are more than one, select which show
+if [ ! -f ~/.config/nspcast/default.conf ]; then
+	read -p "Which show is this? " SHOW
+fi
+
+# Set episode number
+read -p "What is the episode number? " NUM
+LONG_NUM=`printf %03d $NUM`
+
+# Source settings 
+if [ -f ~/.config/nspcast/default.conf ]; then
+	source ~/.config/nspcast/default.conf
+else
+	source ~/.config/nspcast/$SHOW.conf
+fi
+if [ -f ~/.config/nspcast/twilio.conf ]; then
+	source ~/.config/nspcast/twilio.conf
+fi
+
+# Change directory to episode directory
+cd $EPISODE_PATH
+
+# Set episode title
+if [ -f "title.txt" ]; then
+	source title.txt ;
+	echo "$NUM $TITLE" ;
+else 
+	read -p "What is the episode title? " TITLE;
+fi
+
+# Clean up old files
+let LAST="LONG_NUM-1"
+if [ -f "$RENDER_PATH/$SHORT_PRE$LAST.wav" ]; then
+	rm $RENDER_PATH/$SHORT_PRE$LAST.wav ;
+fi
+if [ -f "$VIDEO/temp.*" ]; then
+	rm $VIDEO/temp.* ;
+fi
+if [ -f "$VIDEO_UPLOAD_DIR/*.mp4" ]; then
+	rm "$VIDEO_UPLOAD_DIR/*.mp4"
+fi
+
+# Silence truncation and encode MP3 in temp file
+ffmpeg -i $RENDER_PATH/$SHORT.wav -c libmp3lame -b:a 96k -ar 44100 -ac 1 -af silenceremove=stop_periods=-1:stop_duration=1:start_silence=0.75:stop_threshold=-50dB temp.mp3
+
+# Manipulate images
+convert $ART/thumbnail.png -font Ubuntu -pointsize 350 -draw "gravity center fill white text 0,0 '$NUM' " $THUMB
+convert $THUMB -resize 300x300 cover.jpg
+convert $ART/widescreen.png -font Ubuntu -pointsize 40 -draw "gravity center fill white text 0,390 'Episode $NUM - $TITLE' fill white text 0,450 '$WEBSITE/$NUM' " $WIDE
+convert $WIDE -resize 1280x720 youtube.jpg
+
+# Add tags to MP3 with final name
+ffmpeg -i temp.mp3 -i cover.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" -metadata title="$NUM $TITLE" -metadata artist="$SHOW" -metadata album_artist="$SHOW" -metadata date=$YEAR -metadata track=$NUM $MP3
+
+# Remove temp mp3
+rm temp.mp3 
+
+# Show notes
+if [ ! -f "$MD" ]; then
+	echo "Show notes don't exist. Please create them."
+fi
+read -p "Are you done with the show notes? "
+
+# Finish shownotes
+markdown $MD >> $HTML
+echo "$DOWNLOAD_DIRECT/$MP3" > $META
+echo "$TITLE" >> $META
+echo "$NUM" >> $META 
+echo "$DOWNLOAD_DIRECT/$THUMB" >> $META
+
+# Copy HTML to the webserver and use WP CLI to create the draft post
+if [ $WP_USE="true" ]; then
+       scp $HTML $WP_CP 
+       WP_TITLE="$NUM $TITLE"
+       wp --ssh=$WP_SSH post create $WP_SRC_PATH/$HTML --post_title="$WP_TITLE" --post_status="draft" --post_category="episodes"
+fi
+# Open Firefox tabs to post episode
+$BROWSER $URL1 &
+$BROWSER $URL2 &
+$BROWSER $URL3 &
+
+# Put files in S3 compatabile object storage 
+s3cmd put $MP3 $THUMB s3://$BUCKET -P
+
+# Copy file to local NAS or file server
+if [ ARCHIVE="true" ]; then
+	rsync -azzv $MP3 $THUMB $ARCHIVE_DIR
+fi
+
+gvim $META
+
+# Copy files for video encoding
+if [ $VIDEO_ENCODE="true" ]; then
+       cp $MP3 $VIDEO_DIR/temp.mp3
+       cp youtube.jpg $VIDEO_DIR/temp.jpg
+fi
+# Generate video file on remote host
+if [ $VIDEO_ENCODE_REMOTE="true" ]; then
+	ssh $VIDEO_ENCODE_HOST 'encode-video'
+fi
+
+# Generate video file on local host
+if [ $VIDEO_ENCODE_LOCAL="true" ]; then
+	ffmpeg -loop 1 -i $VIDEO_DIR/temp.jpg -i $VIDEO_DIR/temp.mp3 -c:v libx264 -tune stillimage -crf 28 -c:a aac -strict experimental -b:a 96k -pix_fmt yuv420p -shortest -map_metadata 1 $VIDEO_DIR/temp.mp4
+fi
+
+# Copy video file to episode path and Object Storage
+if [ $VIDEO_ENCODE="true" ]; then
+	mv $VIDEO_DIR/temp.mp4 $EPISODE_PATH/$SHORT.mp4
+fi
+if [ $VIDEO_UPLOAD="true" ]; then
+	cp $SHORT.mp4 "$VIDEO_UPLOAD_DIR/$NUM $TITLE.mp4"
+fi
+echo "All done!"

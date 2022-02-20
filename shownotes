@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# If there are more than one, select which show
+if [ ! -f ~/.config/nspcast/default.conf ]; then
+	read -p "What show is this for? " SHOW
+fi
+
+# Set episode number
+read -p "What is the episode number? " NUM
+LONG_NUM=`printf %03d $NUM`
+
+# Source settings 
+if [ -f ~/.config/nspcast/default.conf ]; then
+	source ~/.config/nspcast/default.conf
+else
+	source ~/.config/nspcast/$SHOW.conf
+fi
+if [ -f ~/.config/nspcast/twilio.conf ]; then
+	source ~/.config/nspcast/twilio.conf
+fi
+
+# Change directory to episdoe working file and make folder if needed
+cd $EPISODE_ROOT
+if [ ! -d "$LONG_NUM" ]; then
+        mkdir "$LONG_NUM"
+fi
+cd $LONG_NUM
+
+# Set episode title if known
+read -p "Do you know the episode title? y/N" TITLE_Q
+if [ $TITLE_Q = "y" ]; then
+	read -p "What is the episode title? " TITLE
+	echo "TITLE='$TITLE'" > title.txt 
+fi
+
+# Check if file already exists, exit if does
+if [ -f "$MD" ]; then
+	echo "Show notes for this episode already exist"; 
+	exit
+fi
+
+# Move show notes stub files to scratch folder
+rsync -azzv $STUBS_2/*.md .
+rsync -azzv STUBS_1 .
+ssh nas 'rm /volume1/homes/dustin/dropbox/shownotes/*'
+
+# Download Twillio Voicemail
+if [ "$TWILIO_USE"="true" ]; then
+	msg_sid=2
+fi
+
+while [ ! -z "$msg_sid" ]; do 
+	msg_sid=`curl -X GET "https://api.twilio.com/2010-04-01/Accounts/$twilio_sid/Recordings.xml"  \
+	-u $twilio_sid:$twilio_token | \
+	sed -n "/Sid/{s/.*<Sid>//;s/<\/Sid.*//;p;}"`
+	
+	if [ ! -z "$msg_sid" ]; then
+		curl -X GET https://api.twilio.com/2010-04-01/Accounts/$twilio_sid/Recordings/$msg_sid.wav --output $msg_sid.wav
+		curl -X DELETE https://api.twilio.com/2010-04-01/Accounts/$twilio_sid/Recordings/$msg_sid.json -u $twilio_sid:$twilio_token
+		voicemail="true"
+	fi
+done
+
+# Merge feedback
+
+cat feedback.txt >> feedback.md
+
+# Build shownotes file
+
+echo "$NUM $TITLE" >> $MD
+echo -e '\n \n ' >> $MD
+if [ -f "$INTRO" ]; then
+	cat $INTRO >> $MD
+fi
+if [ -f "$SEG_A_STUB" ]; then
+	echo "$SEG_A" >> $MD
+	cat $SEG_A_STUB >> $MD
+	echo -e '\n ' >> $MD
+fi
+if [ -f "$SEG_B_STUB" ]; then
+	echo "$SEG_B" >> $MD
+	cat $SEG_B_STUB >> $MD
+	echo -e '\n ' >> $MD
+fi
+if [ -f "$SEG_C_STUB" ]; then
+	echo "$SEG_C" >> $MD
+	cat $SEG_C_STUB >> $MD
+	echo -e '\n ' >> $MD
+fi
+if [ -f "$SEG_D_STUB" ]; then
+	echo "$SEG_D" >> $MD
+	if [ $voicemail="true" ]; then
+		echo "There's voice mail to play" >> $MD
+	fi
+	cat $SEG_D_STUB >> $MD
+	echo -e '\n ' >> $MD
+fi
+if [ -f "$SEG_E_STUB" ]; then
+	echo "$SEG_E" >> $MD
+	cat $SEG_E_STUB >> $MD
+	echo -e '\n ' >> $MD
+fi
+if [ -f "$END" ]; then
+	cat $END >> $MD
+	echo -e '\n ' >> $MD
+fi
+echo "Full shownotes can always be found at [$WEBSITE/$NUM]($WEBSITE/$NUM)" >> $MD
+echo "[Download episode]($DOWNLOAD_STATS/$MP3)" >> $MD
+
+rsync -azzv $MD $STUBS_2/
