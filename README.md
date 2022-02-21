@@ -11,7 +11,7 @@ shownotes - Grab stub files from your note taking solutions and automation data 
 
 encode - Just encodes a wav file to mp3 while adding the ID3 tags without the artwork.
 
-split -  Splits the multitrack wav files recorded by the Tascam MixCast 4 into mono tracks for the mics, and stereo for everything else, then merges the files if the original had been split. For example, if the MixCast splits the recording into two files, then that will be split out from both recordings, then merged together into one file.
+split -  Splits the multitrack wav files recorded by the Tascam MixCast 4 into mono tracks for the mics, and stereo for everything else, then merges the files if the original had been split. For example, if the MixCast splits the recording into two files, then microphone 1 will be split out from both recordings, then merged together into one file, as will happen for the other channels. If it's stereo at the fader, i.e. USB, the USB file will be stereo.
 
 ### Usage
 
