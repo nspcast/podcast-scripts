@@ -41,7 +41,7 @@ fi
 
 # Move show notes stub files to scratch folder
 rsync -azzv $STUBS_2/*.md .
-rsync -azzv STUBS_1 .
+rsync -azzv $STUBS_1 .
 ssh nas 'rm /volume1/homes/dustin/dropbox/shownotes/*'
 
 # Download Twillio Voicemail
