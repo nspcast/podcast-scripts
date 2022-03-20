@@ -4,25 +4,25 @@ pf=$(echo $1 | sed -e 's/\.wav$//' -e 's/.*\.//')
 
 if [ ! -z "$2" ] ; then
 	ffmpeg -i $1 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2];[0:a]channelmap=2[mic3];[0:a]channelmap=3[mic4];[0:a]channelmap=4|5[usb];[0:a]channelmap=6|7[aux];[0:a]channelmap=8|9[bt];[0:a]channelmap=10|11[pad];[0:a]channelmap=12|13[mix]" \
-	-ar 48000 -acodec pcm_s24le -map "[mic1]" temp1-mic1.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic2]" temp1-mic2.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic3]" temp1-mic3.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic4]" temp1-mic4.wav \
-	-ar 48000 -acodec pcm_s24le -map "[usb]" temp1-usb.wav \
-	-ar 48000 -acodec pcm_s24le -map "[aux]" temp1-aux.wav \
-	-ar 48000 -acodec pcm_s24le -map "[bt]" temp1-bt.wav \
-	-ar 48000 -acodec pcm_s24le -map "[pad]" temp1-pad.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mix]" temp1-mix.wav 
+	-map "[mic1]" temp1-mic1.wav \
+	-map "[mic2]" temp1-mic2.wav \
+	-map "[mic3]" temp1-mic3.wav \
+	-map "[mic4]" temp1-mic4.wav \
+	-map "[usb]" temp1-usb.wav \
+	-map "[aux]" temp1-aux.wav \
+	-map "[bt]" temp1-bt.wav \
+	-map "[pad]" temp1-pad.wav \
+	-map "[mix]" temp1-mix.wav 
 	ffmpeg -i $2 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2];[0:a]channelmap=2[mic3];[0:a]channelmap=3[mic4];[0:a]channelmap=4|5[usb];[0:a]channelmap=6|7[aux];[0:a]channelmap=8|9[bt];[0:a]channelmap=10|11[pad];[0:a]channelmap=12|13[mix]" \
-	-ar 48000 -acodec pcm_s24le -map "[mic1]" temp2-mic1.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic2]" temp2-mic2.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic3]" temp2-mic3.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic4]" temp2-mic4.wav \
-	-ar 48000 -acodec pcm_s24le -map "[usb]" temp2-usb.wav \
-	-ar 48000 -acodec pcm_s24le -map "[aux]" temp2-aux.wav \
-	-ar 48000 -acodec pcm_s24le -map "[bt]" temp2-bt.wav \
-	-ar 48000 -acodec pcm_s24le -map "[pad]" temp2-pad.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mix]" temp2-mix.wav 
+	-map "[mic1]" temp2-mic1.wav \
+	-map "[mic2]" temp2-mic2.wav \
+	-map "[mic3]" temp2-mic3.wav \
+	-map "[mic4]" temp2-mic4.wav \
+	-map "[usb]" temp2-usb.wav \
+	-map "[aux]" temp2-aux.wav \
+	-map "[bt]" temp2-bt.wav \
+	-map "[pad]" temp2-pad.wav \
+	-map "[mix]" temp2-mix.wav 
 	sox temp1-mic1.wav temp2-mic1.wav $pf-1-mic1.wav
 	sox temp1-mic2.wav temp2-mic2.wav $pf-2-mic2.wav
 	sox temp1-mic3.wav temp2-mic3.wav $pf-3-mic3.wav
@@ -35,13 +35,13 @@ if [ ! -z "$2" ] ; then
 	rm temp*
 else
 	ffmpeg -i $1 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2];[0:a]channelmap=2[mic3];[0:a]channelmap=3[mic4];[0:a]channelmap=4|5[usb];[0:a]channelmap=6|7[aux];[0:a]channelmap=8|9[bt];[0:a]channelmap=10|11[pad];[0:a]channelmap=12|13[mix]" \
-	-ar 48000 -acodec pcm_s24le -map "[mic1]" $pf-1-mic1.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic2]" $pf-2-mic2.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic3]" $pf-3-mic3.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mic4]" $pf-4-mic4.wav \
-	-ar 48000 -acodec pcm_s24le -map "[usb]" $pf-5-usb.wav \
-	-ar 48000 -acodec pcm_s24le -map "[aux]" $pf-6-aux.wav \
-	-ar 48000 -acodec pcm_s24le -map "[bt]" $pf-7-bt.wav \
-	-ar 48000 -acodec pcm_s24le -map "[pad]" $pf-8-pad.wav \
-	-ar 48000 -acodec pcm_s24le -map "[mix]" $pf-9-mix.wav 
+	-map "[mic1]" $pf-1-mic1.wav \
+	-map "[mic2]" $pf-2-mic2.wav \
+	-map "[mic3]" $pf-3-mic3.wav \
+	-map "[mic4]" $pf-4-mic4.wav \
+	-map "[usb]" $pf-5-usb.wav \
+	-map "[aux]" $pf-6-aux.wav \
+	-map "[bt]" $pf-7-bt.wav \
+	-map "[pad]" $pf-8-pad.wav \
+	-map "[mix]" $pf-9-mix.wav 
 fi
