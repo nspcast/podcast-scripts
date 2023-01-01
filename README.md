@@ -34,6 +34,7 @@ split file1.wav file2.wav
 - discount
 - wpcli
 - sox
+- Whisper
 
 Of course if you remove some of the features, then some of these dependencies would be removed.
 
