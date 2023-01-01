@@ -63,12 +63,6 @@ if [ ! -f "$MD" ]; then
 fi
 read -p "Are you done with the show notes? "
 
-# Transcript and Subtitle generation
-
-if [ "$WHISPER_USE"="true" ]; then
-	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
-fi
-
 # Finish shownotes
 markdown $MD >> $HTML
 echo "$DOWNLOAD_DIRECT/$MP3" > $META
@@ -120,3 +114,9 @@ if [ $VIDEO_UPLOAD="true" ]; then
 	cp $SHORT.mp4 "$VIDEO_UPLOAD_DIR/$NUM $TITLE.mp4"
 fi
 echo "All done!"
+
+# Transcript and Subtitle generation
+if [ "$WHISPER_USE"="true" ]; then
+	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
+fi
+
