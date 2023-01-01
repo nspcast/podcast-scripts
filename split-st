@@ -1,0 +1,7 @@
+#!/bin/bash
+
+pf=$(echo $1 | sed -e 's/\.wav$//' -e 's/.*\.//')
+
+ffmpeg -i $1 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2]" \
+-ar 48000 -acodec pcm_s24le -map "[mic1]" $pf-1-mic1.wav \
+-ar 48000 -acodec pcm_s24le -map "[mic2]" $pf-2-mic2.wav \

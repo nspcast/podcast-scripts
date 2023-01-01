@@ -25,6 +25,10 @@ Split can accept two file names like:
 
 split file1.wav file2.wav  
 
+Split-st is for stereo files and accepts one file name
+
+split file1.wav
+
 ### Dependences
 
 - FFMPEG
