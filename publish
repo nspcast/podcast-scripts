@@ -91,6 +91,11 @@ fi
 
 gvim $META
 
+# Transcript and Subtitle generation
+if [ "$WHISPER_USE"="true" ]; then
+	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
+fi
+
 # Copy files for video encoding
 if [ $VIDEO_ENCODE="true" ]; then
        cp $MP3 $VIDEO_DIR/temp.mp3
@@ -115,8 +120,5 @@ if [ $VIDEO_UPLOAD="true" ]; then
 fi
 echo "All done!"
 
-# Transcript and Subtitle generation
-if [ "$WHISPER_USE"="true" ]; then
-	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
-fi
+
 
