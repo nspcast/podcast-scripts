@@ -96,6 +96,13 @@ if [ "$WHISPER_USE"="true" ]; then
 	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
 fi
 
+# Transcript and Subtitle generation on remote host. Edit whisper-remote script and copy to remote host.
+if [ "$WHISPER_USE"="remote" ]; then
+	scp $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH
+	ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
+	scp $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
+fi
+
 # Copy files for video encoding
 if [ $VIDEO_ENCODE="true" ]; then
        cp $MP3 $VIDEO_DIR/temp.mp3
