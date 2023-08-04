@@ -98,7 +98,7 @@ fi
 
 # Transcript and Subtitle generation on remote host. Edit whisper-remote script and copy to remote host.
 if [ "$WHISPER_USE"="remote" ]; then
-	scp $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH
+	rsync -azzv $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH/temp.mp3
 	ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
 	scp $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
 fi
