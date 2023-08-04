@@ -100,7 +100,7 @@ fi
 if [ "$WHISPER_USE"="remote" ]; then
 	rsync -azzv $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH/temp.mp3
 	ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
-	scp $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
+	rsync -azzv $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
 fi
 
 # Copy files for video encoding
