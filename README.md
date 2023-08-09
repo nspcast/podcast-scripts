@@ -1,7 +1,7 @@
 # podcast-scripts
 NPSCast Podcast Production Scripts
 
-Feel free to branch, fork, use, or modify these as you see fit. These are written for my workflow, so modify the scripts to meet your needs. 
+Feel free to branch, fork, use, or modify these as you see fit. These are written for my workflow, so modify the scripts to meet your needs. Some sections on the publish script are commented out, these are ones I don't use any more. Uncomment them if you want to use them. For the sections I use they aren't commented out, so feel free to comment them out if you don't need them.
 
 ### What do they do?
 

@@ -71,60 +71,47 @@ echo "$NUM" >> $META
 echo "$DOWNLOAD_DIRECT/$THUMB" >> $META
 
 # Copy HTML to the webserver and use WP CLI to create the draft post
-if [ $WP_USE="true" ]; then
        scp $HTML $WP_CP 
        WP_TITLE="$NUM $TITLE"
        wp --ssh=$WP_SSH post create $WP_SRC_PATH/$HTML --post_title="$WP_TITLE" --post_status="draft" --post_category="episodes"
-fi
+
 # Open Firefox tabs to post episode
 $BROWSER $URL1 &
 $BROWSER $URL2 &
 $BROWSER $URL3 &
 
 # Put files in S3 compatabile object storage 
-s3cmd put $MP3 $THUMB s3://$BUCKET -P
+# s3cmd put $MP3 $THUMB s3://$BUCKET -P ;
 
 # Copy file to local NAS or file server
-if [ ARCHIVE="true" ]; then
-	rsync -azzv $MP3 $THUMB $ARCHIVE_DIR
-fi
+#rsync -azzv $MP3 $THUMB $ARCHIVE_DIR ;
 
-gvim $META
+# Open metadata in Gvim
+gvim $META &
 
 # Transcript and Subtitle generation
-if [ "$WHISPER_USE"="true" ]; then
-	whisper --model $WHISPER_MODEL --language $WHISPER_LANG --threads $WHISPER_THREADS $MP3
-fi
+ffmpeg -i $MP3 -acodec pcm_s16le -ar 16000 $SHORT.wav
+$WHISPER_COMMAND $SHORT.wav >> $SHORT.srt
+rm $SHORT.wav
 
 # Transcript and Subtitle generation on remote host. Edit whisper-remote script and copy to remote host.
-if [ "$WHISPER_USE"="remote" ]; then
-	scp $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH/temp.mp3
-	ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
-	scp -azzv $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
-fi
+#scp $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH/temp.mp3
+#ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
+#scp -azzv $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
 
 # Copy files for video encoding
-if [ $VIDEO_ENCODE="true" ]; then
-       cp $MP3 $VIDEO_DIR/temp.mp3
-       cp youtube.jpg $VIDEO_DIR/temp.jpg
-fi
+#cp $MP3 $VIDEO_DIR/temp.mp3
+#cp youtube.jpg $VIDEO_DIR/temp.jpg
+
 # Generate video file on remote host
-if [ $VIDEO_ENCODE_REMOTE="true" ]; then
-	ssh $VIDEO_ENCODE_HOST 'encode-video'
-fi
+#ssh $VIDEO_ENCODE_HOST 'encode-video'
 
 # Generate video file on local host
-if [ $VIDEO_ENCODE_LOCAL="true" ]; then
-	ffmpeg -loop 1 -i $VIDEO_DIR/temp.jpg -i $VIDEO_DIR/temp.mp3 -c:v libx264 -tune stillimage -crf 28 -c:a aac -strict experimental -b:a 96k -pix_fmt yuv420p -shortest -map_metadata 1 $VIDEO_DIR/temp.mp4
-fi
+#ffmpeg -loop 1 -i $VIDEO_DIR/temp.jpg -i $VIDEO_DIR/temp.mp3 -c:v libx264 -tune stillimage -crf 28 -c:a aac -strict experimental -b:a 96k -pix_fmt yuv420p -shortest -map_metadata 1 $VIDEO_DIR/temp.mp4
 
 # Copy video file to episode path and Object Storage
-if [ $VIDEO_ENCODE="true" ]; then
-	mv $VIDEO_DIR/temp.mp4 $EPISODE_PATH/$SHORT.mp4
-fi
-if [ $VIDEO_UPLOAD="true" ]; then
-	cp $SHORT.mp4 "$VIDEO_UPLOAD_DIR/$NUM $TITLE.mp4"
-fi
+#mv $VIDEO_DIR/temp.mp4 $EPISODE_PATH/$SHORT.mp4
+#cp $SHORT.mp4 "$VIDEO_UPLOAD_DIR/$NUM $TITLE.mp4"
 echo "All done!"
 
 
