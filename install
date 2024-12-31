@@ -1,6 +1,0 @@
-#!/bin/bash
-sudo cp encode publish shownotes split /usr/local/bin/
-if [ ! -d ~/.config/nspcast ]; then
-	mkdir ~/.config/nspcast
-	cp *.conf ~/.config/nspcast/
-fi

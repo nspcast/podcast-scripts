@@ -3,7 +3,7 @@
 pf=$(echo $1 | sed -e 's/\.wav$//' -e 's/.*\.//')
 
 if [ ! -z "$2" ] ; then
-	ffmpeg -i $1 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2];[0:a]channelmap=2[mic3];[0:a]channelmap=3[mic4];[0:a]channelmap=4|5[usb];[0:a]channelmap=6|7[aux];[0:a]channelmap=8|9[bt];[0:a]channelmap=10|11[pad];[0:a]channelmap=12|13[mix]" \
+	ffmpeg -i $1 -ar 48000 -acodec pcm_s24le -filter_complex "[0:a]channelmap=0[mic1];[0:a]channelmap=1[mic2];[0:a]channelmap=2[mic3];[0:a]channelmap=3[mic4];[0:a]channelmap=4|5[usb];[0:a]channelmap=6|7[aux];[0:a]channelmap=8|9[bt];[0qq:a]channelmap=10|11[pad];[0:a]channelmap=12|13[mix]" \
 	-map "[mic1]" temp1-mic1.wav \
 	-map "[mic2]" temp1-mic2.wav \
 	-map "[mic3]" temp1-mic3.wav \

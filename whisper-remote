@@ -1,3 +1,0 @@
-#!/bin/bash
-
-~/.local/bin/whisper --model base.en --language en --threads 4 ~/temp.mp3
