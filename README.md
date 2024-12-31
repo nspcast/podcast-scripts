@@ -5,9 +5,7 @@ Feel free to branch, fork, use, or modify these as you see fit. These are writte
 
 ### What do they do?
 
-publish - Grab the .wav file and make a MP3 file while truncating the silence to no more than 1.0 seconds. Then it grabs your thumbnail image and adds your episode number to it, creates on the tags for the MP3 file, finishes up the show notes, uploads the MP3 and artwork to s3 compatable object storage, uploads the HTML file for the show notes to the web server, runs WP-CLI to create the Wordpress Post, and it can encode a video for you as well.
-
-shownotes - Grab stub files from your note taking solutions and automation data gathering to compile the episodes show notes. Also download voicemail from Twilio if you use that.
+publish - Grab the .wav file and make a MP3 file while truncating the silence to no more than 1.0 seconds. Then it grabs your thumbnail image and adds your episode number to it, creates on the tags for the MP3 file, finishes up the show notes, uploads the HTML file for the show notes to the web server, runs WP-CLI to create the Wordpress Post, and it generates transcripts using Whisper-cpp
 
 encode - Just encodes a wav file to mp3 while adding the ID3 tags without the artwork.
 
@@ -15,42 +13,35 @@ split -  Splits the multitrack wav files recorded by the Tascam MixCast 4 into m
 
 ### Usage
 
-publish and shownotes do not accept command line arguments, they gather data from questions.
+publish does not accept command line arguments, it gather data from questions.
 
 Encode can accept one file name like:
 
 encode file.wav
 
-Split can accept two file names like:
+mixcast-split can accept two file names like:
 
-split file1.wav file2.wav  
+mixcast-split file1.wav file2.wav  
 
-Split-st is for stereo files and accepts one file name
+split-st is for stereo files and accepts one file name
 
-split file1.wav
+split-st file1.wav
 
 ### Dependences
 
 - FFMPEG
 - ImageMagick
 - rsync
-- s3cmd
 - discount
 - wpcli
 - sox
-- Whisper
+- Whisper-cpp
 
 Of course if you remove some of the features, then some of these dependencies would be removed.
 
 ### Setup
 
-If you only have one show, then update default.conf to match your show's details.
-If you have more than one show, then make a copy of default.conf for each of your shows using the show's short prefix as the name, such as ab.conf and cd.conf. Be sure that you remove default.conf before you run the install script.
-
-If you're going to use Twilio for voicemail, the populate the twilio.conf file.
-
-If you run ./install it will copy the scripts to /usr/local/bin/ and .conf files to ~/.config/nspcast/
-The install script will also handle updates, but will not copy anything to ~/.config/nspcast if that directory exists, so it won't overwrite your configurations.
+Update the configuration section at the top of each script.
 
 ### To Do
 

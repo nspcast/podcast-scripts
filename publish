@@ -1,27 +1,72 @@
 #!/bin/bash
-
-# If there are more than one, select which show
-if [ ! -f ~/.config/nspcast/default.conf ]; then
-	read -p "Which show is this? " SHOW
-fi
-
+#
+######################################################################
+############ Config - Change this to match your show #################
+######################################################################
+#
+# Information about your podcast
+SHOW="Podcast Name"        # Name of podcast
+WEBSITE="https://example/com"    # Website URL
+PREFIX="abc"            # Show's Prefix
+#
+# Local directories
+RENDER_PATH="/path/to/where/daw/puts/file"    # Folder where rendered/exported file from your DAW is
+TMP_PATH="/temporary/path/"                  # Where you temporary working files are
+EPISODE_ROOT="/path/to/podcast/files"        # Root of where all of your episode files are
+TEMPLATE_PATH="/path/to/template/files/" # Folder where you have stub files for your shownotes"
+ART="/path/to/podcast/artwork/"            # Folder where artwork is
+#
+# Commands
+TEXT_EDITOR="open -a TextEdit"
+BROWSER="open -a Safari"
+WHISPER_MODEL="~/podcast/models/ggml-large-v3-turbo.bin"
+#
+# URLs you need opened
+URL1="$WEBSITE/wp-admin/edit.php"
+URL2="https://your-hosting-provider/posts/new"
+URL3="https://www.patreon.com/posts/new"
+URL4="$WEBSITE/wp-admin/post-new.php?post_type=pretty-link"
+#
+# Archives
+ARCHIVE="true"            # Do you have a local archive folder?
+ARCHIVE_DIR="/path/to/archives/" # Path to NAS
+#
+# wp-cli
+WP_CP="server:/home/user/"
+WP_SSH="server:/var/www/example.com/html/"
+WP_SRC_PATH="/home/user"
+#
+######################################################################
+############ Below is the actual script, edit as needed ##############
+######################################################################
+#
 # Set episode number
 read -p "What is the episode number? " NUM
 LONG_NUM=`printf %03d $NUM`
-
-# Source settings 
-if [ -f ~/.config/nspcast/default.conf ]; then
-	source ~/.config/nspcast/default.conf
-else
-	source ~/.config/nspcast/$SHOW.conf
+SHORT="$PREFIX$LONG_NUM"
+TMP="$TMP_PATH/$SHORT"
+EPISODE_PATH="$EPISODE_ROOT/$LONG_NUM"
+YEAR=$(date +'%Y')
+#
+# Clean up old files
+let LAST="NUM-1"
+LAST2=`printf %03d $LAST`
+if [ -f "$RENDER_PATH/$PREFIX$LAST2.wav" ]; then
+    rm "$RENDER_PATH/$PREFIX$LAST2.wav" ;
 fi
-if [ -f ~/.config/nspcast/twilio.conf ]; then
-	source ~/.config/nspcast/twilio.conf
+if [ -d "$TMP_PATH/$PREFIX$LAST2" ]; then
+    rm -R "$TMP_PATH/$PREFIX$LAST2" ;
 fi
-
-# Change directory to episode directory
-cd $EPISODE_PATH
-
+#
+# Make directories and change directory to working directory
+if [ ! -d "$TMP" ]; then
+    mkdir -p "$TMP"
+fi
+if [ ! -d "$EPISODE_PATH" ]; then
+    mkdir -p "$EPISODE_PATH"
+fi
+cd $TMP
+#
 # Set episode title
 if [ -f "title.txt" ]; then
 	source title.txt ;
@@ -29,90 +74,50 @@ if [ -f "title.txt" ]; then
 else 
 	read -p "What is the episode title? " TITLE;
 fi
-
-# Clean up old files
-let LAST="LONG_NUM-1"
-if [ -f "$RENDER_PATH/$SHORT_PRE$LAST.wav" ]; then
-	rm $RENDER_PATH/$SHORT_PRE$LAST.wav ;
-fi
-if [ -f "$VIDEO/temp.*" ]; then
-	rm $VIDEO/temp.* ;
-fi
-if [ -f "$VIDEO_UPLOAD_DIR/*.mp4" ]; then
-	rm "$VIDEO_UPLOAD_DIR/*.mp4"
-fi
-
+#
 # Silence truncation and encode MP3 in temp file
-ffmpeg -i $RENDER_PATH/$SHORT.wav -c libmp3lame -b:a 96k -ar 44100 -ac 1 -af silenceremove=stop_periods=-1:stop_duration=1:start_silence=0.75:stop_threshold=-50dB temp.mp3
-
+ffmpeg -i $RENDER_PATH/$SHORT.wav -c libmp3lame -b:a 96k -ar 44100 -ac 1 -af silenceremove=stop_periods=-1:stop_duration=1:start_silence=0.75:stop_threshold=-50dB tmp.mp3
+#
 # Manipulate images
-convert $ART/thumbnail.png -font Ubuntu -pointsize 350 -draw "gravity center fill white text 0,0 '$NUM' " $THUMB
-convert $THUMB -resize 300x300 cover.jpg
-convert $ART/widescreen.png -font Ubuntu -pointsize 40 -draw "gravity center fill white text 0,390 'Episode $NUM - $TITLE' fill white text 0,450 '$WEBSITE/$NUM' " $WIDE
-convert $WIDE -resize 1280x720 youtube.jpg
-
+magick $ART/thumbnail.png -font Ubuntu -pointsize 350 -draw "gravity center fill white text 0,0 '$NUM' " $SHORT-thumbnail.jpg
+magick $THUMB -resize 300x300 cover.jpg
+cp $SHORT-thumbnail.jpg $EPISODE_PATH/
+#
 # Add tags to MP3 with final name
-ffmpeg -i temp.mp3 -i cover.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" -metadata title="$NUM $TITLE" -metadata artist="$SHOW" -metadata album_artist="$SHOW" -metadata date=$YEAR -metadata track=$NUM $MP3
-
-# Remove temp mp3
-rm temp.mp3 
-
+ffmpeg -i tmp.mp3 -i cover.jpg -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title="Album cover" -metadata:s:v comment="Cover (Front)" -metadata title="$NUM $TITLE" -metadata artist="$SHOW" -metadata album_artist="$SHOW" -metadata date=$YEAR -metadata track=$NUM $EPISODE_PATH/$MP3
+#
+# Generate wav file for Whisper
+ffmpeg -i tmp.mp3 -acodec pcm_s16le -ar 16000 whisper.wav
+#
 # Show notes
-if [ ! -f "$MD" ]; then
-	echo "Show notes don't exist. Please create them."
+if [ ! -f $SHORT.md ]; then
+    echo "Show notes don't exist. Please create them." ;
+    touch $SHORT.md ;
+    cat $TEMPLATE/links.md >> $SHORT.md ;
+    cat $TEMPLATE/end.md >> $SHORT.md ;
+    $TEXT_EDITOR $SHORT.md ;
 fi
 read -p "Are you done with the show notes? "
-
+#
 # Finish shownotes
-markdown $MD >> $HTML
-echo "$DOWNLOAD_DIRECT/$MP3" > $META
-echo "$TITLE" >> $META
-echo "$NUM" >> $META 
-echo "$DOWNLOAD_DIRECT/$THUMB" >> $META
-
+markdown $SHORT.md >> $EPISODE_PATH/$SHORT.html
+#
 # Copy HTML to the webserver and use WP CLI to create the draft post
-       scp $HTML $WP_CP 
-       WP_TITLE="$NUM $TITLE"
-       wp --ssh=$WP_SSH post create $WP_SRC_PATH/$HTML --post_title="$WP_TITLE" --post_status="draft" --post_category="episodes"
-
-# Open Firefox tabs to post episode
+scp $EPISODE_PATH/$SHORT.html $WP_CP
+WP_TITLE="$NUM $TITLE"
+wp --ssh=$WP_SSH post create $WP_SRC_PATH/$HTML --post_title="$WP_TITLE" --post_status="draft" --post_category="episodes"
+#
+# OpenbBrowser tabs to post episode
 $BROWSER $URL1 &
 $BROWSER $URL2 &
 $BROWSER $URL3 &
-
-# Put files in S3 compatabile object storage 
-# s3cmd put $MP3 $THUMB s3://$BUCKET -P ;
-
+$BROWSER $URL4 &
+#
 # Copy file to local NAS or file server
-#rsync -azzv $MP3 $THUMB $ARCHIVE_DIR ;
-
-# Open metadata in Gvim
-gvim $META &
-
-# Transcript and Subtitle generation
-ffmpeg -i $MP3 -acodec pcm_s16le -ar 16000 $SHORT.wav
-$WHISPER_COMMAND $SHORT.wav >> $SHORT.srt
-rm $SHORT.wav
-
-# Transcript and Subtitle generation on remote host. Edit whisper-remote script and copy to remote host.
-#scp $MP3 $WHISPER_REMOTE_HOST:$WHISPER_REMOTE_PATH/temp.mp3
-#ssh $WHISPER_REMOTE_HOST -t '~/.local/bin/whisper-remote'
-#scp -azzv $WHISPER_REMOTE_HOST:/$WHISPER_REMOTE_PATH/*.srt .
-
-# Copy files for video encoding
-#cp $MP3 $VIDEO_DIR/temp.mp3
-#cp youtube.jpg $VIDEO_DIR/temp.jpg
-
-# Generate video file on remote host
-#ssh $VIDEO_ENCODE_HOST 'encode-video'
-
-# Generate video file on local host
-#ffmpeg -loop 1 -i $VIDEO_DIR/temp.jpg -i $VIDEO_DIR/temp.mp3 -c:v libx264 -tune stillimage -crf 28 -c:a aac -strict experimental -b:a 96k -pix_fmt yuv420p -shortest -map_metadata 1 $VIDEO_DIR/temp.mp4
-
-# Copy video file to episode path and Object Storage
-#mv $VIDEO_DIR/temp.mp4 $EPISODE_PATH/$SHORT.mp4
-#cp $SHORT.mp4 "$VIDEO_UPLOAD_DIR/$NUM $TITLE.mp4"
+rsync -azzv $EPISODE_ROOT $ARCHIVE_DIR ;
+#
+# Transcript generation - Uncomment the export line if you have a Mac with Apple Silicon
+# export GGML_METAL_PATH_RESOURCES="$(brew --prefix whisper-cpp)/share/whisper-cpp" # For Mac OS
+whisper-cpp -m $WHISPER_MODEL -l en -osrt --file whisper.wav --output-file $EPISODE_PATH/$SHORT
+#
 echo "All done!"
-
-
-

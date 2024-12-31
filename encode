@@ -1,10 +1,25 @@
 #!/bin/bash
-
-# If there are more than one, select which show
-if [ ! -f ~/.config/nspcast/default.conf ]; then
-	read -p "What show is this for? " SHOW
-fi
-
+#
+######################################################################
+############ Config - Change this to match your show #################
+######################################################################
+#
+# Information about your podcast
+SHOW="Podcast Name"        # Name of podcast
+WEBSITE="https://example/com"    # Website URL
+PREFIX="abc"            # Show's Prefix
+#
+# Local directories
+RENDER_PATH="/path/to/where/daw/puts/file"    # Folder where rendered/exported file from your DAW is
+TMP_PATH="/temporary/path/"                  # Where you temporary working files are
+EPISODE_ROOT="/path/to/podcast/files"        # Root of where all of your episode files are
+TEMPLATE_PATH="/path/to/template/files/" # Folder where you have stub files for your shownotes"
+ART="/path/to/podcast/artwork/"            # Folder where artwork is
+#
+######################################################################
+############ Below is the actual script, edit as needed ##############
+######################################################################
+#
 # Set episode number
 read -p "What is the episode number? " NUM
 LONG_NUM=`printf %03d $NUM`
